@@ -160,7 +160,7 @@ function App() {
             <div className="flex flex-wrap items-center justify-center gap-4 mb-6 px-4 py-3 bg-muted rounded-lg">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">
-                  Buscando: <span className="font-medium text-foreground">"{state.searchQuery}"</span>
+                  Searching: <span className="font-medium text-foreground">"{state.searchQuery}"</span>
                 </span>
                 <Button
                   variant="ghost"
@@ -169,7 +169,7 @@ function App() {
                   className="gap-1 h-6 px-2 text-xs"
                 >
                   <X size={12} />
-                  Limpiar
+                  Clear
                 </Button>
               </div>
             </div>
@@ -206,13 +206,13 @@ function App() {
                 title="No papers found"
                 description={
                   isSearchMode
-                    ? "Prueba con diferentes palabras clave o navega por tema."
-                    : "No hay papers disponibles para este tema en este momento."
+                    ? "Try different keywords or browse by topic."
+                    : "No papers available for this topic at the moment."
                 }
                 action={
                   isSearchMode
                     ? {
-                        label: "Limpiar búsqueda",
+                        label: "Clear search",
                         onClick: () => handleSearch('')
                       }
                     : undefined
@@ -235,11 +235,11 @@ function App() {
                       className="gap-2"
                     >
                       {state.loading ? (
-                        'Cargando...'
+                        'Loading...'
                       ) : (
                         <>
                           <ArrowDown size={16} />
-                          Cargar más papers
+                          Load more papers
                         </>
                       )}
                     </Button>
