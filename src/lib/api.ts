@@ -1,20 +1,64 @@
+/**
+ * @fileoverview API integration layer for arXiv research papers
+ * 
+ * This module provides the core API functionality for fetching and parsing
+ * research papers from the arXiv API. It includes caching, error handling,
+ * and data transformation utilities.
+ * 
+ * @author arXiv Research Hub Team
+ * @version 1.0.0
+ */
+
 import { ArxivPaper, PapersResponse, APIError, QueryParams } from './types';
 import { buildArxivQuery, getCacheKey } from './queryBuilder';
 
-const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+/** Cache duration in milliseconds (10 minutes) */
+const CACHE_DURATION = 10 * 60 * 1000;
+
+/** Default number of papers to fetch per page */
 const DEFAULT_PAGE_SIZE = 20;
 
+/**
+ * Cache entry structure for storing API responses
+ * @interface CacheEntry
+ */
 interface CacheEntry {
+  /** The cached API response data */
   data: PapersResponse;
+  /** Timestamp when the data was cached */
   timestamp: number;
 }
 
+/** In-memory cache for API responses */
 const cache = new Map<string, CacheEntry>();
 
+/**
+ * Checks if a cache entry is still valid based on its timestamp
+ * @param entry - The cache entry to validate
+ * @returns True if the cache entry is still valid, false otherwise
+ */
 function isValidCache(entry: CacheEntry): boolean {
   return Date.now() - entry.timestamp < CACHE_DURATION;
 }
 
+/**
+ * Parses arXiv API XML response and converts it to ArxivPaper objects
+ * 
+ * The arXiv API returns data in Atom XML format. This function extracts
+ * relevant paper information including title, authors, abstract, categories,
+ * and generates appropriate links for PDF and abstract viewing.
+ * 
+ * @param xmlText - Raw XML response from arXiv API
+ * @returns Array of parsed ArxivPaper objects
+ * @throws Error if XML parsing fails
+ * 
+ * @example
+ * ```typescript
+ * const xmlResponse = await fetch('http://export.arxiv.org/api/query?...');
+ * const xmlText = await xmlResponse.text();
+ * const papers = parseArxivFeed(xmlText);
+ * ```
+ */
 function parseArxivFeed(xmlText: string): ArxivPaper[] {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
@@ -82,6 +126,37 @@ function parseArxivFeed(xmlText: string): ArxivPaper[] {
   return papers;
 }
 
+/**
+ * Main function for fetching research papers from arXiv API
+ * 
+ * This function handles the complete lifecycle of fetching papers:
+ * 1. Checks local cache for existing data
+ * 2. Builds appropriate arXiv query URL
+ * 3. Fetches data from arXiv API if cache miss
+ * 4. Parses XML response into structured data
+ * 5. Updates cache with new results
+ * 
+ * @param params - Query parameters for fetching papers
+ * @param params.topic - Research topic filter (optional)
+ * @param params.search - Search query string (optional)
+ * @param params.page - Page number for pagination (default: 0)
+ * @param params.pageSize - Number of results per page (default: 20)
+ * 
+ * @returns Promise resolving to papers response with metadata
+ * @throws APIError if the request fails or parsing errors occur
+ * 
+ * @example
+ * ```typescript
+ * // Fetch papers by topic
+ * const response = await fetchPapers({ topic: 'llm-nlp', page: 0 });
+ * 
+ * // Search for specific papers
+ * const searchResults = await fetchPapers({ 
+ *   search: 'transformer attention', 
+ *   page: 0 
+ * });
+ * ```
+ */
 export async function fetchPapers(params: QueryParams): Promise<PapersResponse> {
   const cacheKey = getCacheKey(params);
   const cached = cache.get(cacheKey);
