@@ -3,7 +3,7 @@ import { formatRelativeDate, formatAuthors, formatCategory } from '@/lib/api';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ExternalLink, FileText, Calendar, Users } from '@phosphor-icons/react';
+import { ExternalLink, Globe, Calendar, Users } from '@phosphor-icons/react';
 
 interface PaperCardProps {
   paper: ArxivPaper;
@@ -31,13 +31,13 @@ export function PaperCard({ paper }: PaperCardProps) {
             className="shrink-0"
           >
             <a
-              href={paper.links.pdf}
+              href={paper.links.html}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5"
             >
-              <FileText size={16} />
-              PDF
+              <Globe size={16} />
+              HTML
             </a>
           </Button>
         </div>

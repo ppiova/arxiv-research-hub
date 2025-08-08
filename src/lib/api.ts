@@ -41,7 +41,7 @@ function parseArxivFeed(xmlText: string): ArxivPaper[] {
         if (term) categories.push(term);
       });
 
-      const links = { abs: '', pdf: '' };
+      const links = { abs: '', pdf: '', html: '' };
       entry.querySelectorAll('link').forEach((link) => {
         const href = link.getAttribute('href') || '';
         const title = link.getAttribute('title') || '';
@@ -58,6 +58,9 @@ function parseArxivFeed(xmlText: string): ArxivPaper[] {
       }
       if (!links.pdf && links.abs) {
         links.pdf = links.abs.replace('/abs/', '/pdf/') + '.pdf';
+      }
+      if (!links.html && links.abs) {
+        links.html = links.abs.replace('/abs/', '/html/');
       }
 
       if (title && summary && authors.length > 0) {

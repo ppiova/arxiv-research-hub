@@ -8,6 +8,7 @@ export interface ArxivPaper {
   links: {
     abs: string;
     pdf: string;
+    html: string;
   };
 }
 
