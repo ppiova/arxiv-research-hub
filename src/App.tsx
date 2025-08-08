@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { ArxivPaper, PapersResponse, APIError, TOPICS, TopicKey } from '@/lib/types';
+import { ArxivPaper, PapersResponse, APIError, TOPICS, TopicKey, SortMode, DateRange } from '@/lib/types';
 import { fetchPapers } from '@/lib/api';
+import { getDateRangeFromDays } from '@/lib/queryBuilder';
 import { PaperCard } from '@/components/PaperCard';
 import { PaperGridSkeleton } from '@/components/PaperCardSkeleton';
 import { SearchBar } from '@/components/SearchBar';
 import { ErrorState, EmptyState } from '@/components/ErrorState';
+import { ModeSelector } from '@/components/ModeSelector';
+import { DateRangeSelector } from '@/components/DateRangeSelector';
+import { KeywordsSelector } from '@/components/KeywordsSelector';
 import { Moon, Sun, ArrowDown, X } from '@phosphor-icons/react';
 
 interface AppState {
@@ -18,6 +22,11 @@ interface AppState {
   totalResults: number;
   loadedResults: number;
   darkMode: boolean;
+  mode: SortMode;
+  selectedDateRange: DateRange | null;
+  customDateRange: { from: string; to: string } | null;
+  selectedKeywords: string[];
+  currentPage: number;
 }
 
 function App() {
@@ -29,24 +38,48 @@ function App() {
     searchQuery: '',
     totalResults: 0,
     loadedResults: 0,
-    darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches
+    darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
+    mode: 'latest',
+    selectedDateRange: null,
+    customDateRange: null,
+    selectedKeywords: [],
+    currentPage: 0
   });
 
-  const loadPapers = async (topic?: TopicKey, search?: string, append: boolean = false) => {
+  const loadPapers = async (append: boolean = false) => {
     setState(prev => ({ ...prev, loading: true, error: null }));
     
     try {
-      const start = append ? state.loadedResults : 0;
-      const response: PapersResponse = await fetchPapers(topic, search, start);
+      const page = append ? state.currentPage + 1 : 0;
+      
+      // Build date range
+      let dateRange: { from?: string; to?: string } = {};
+      if (state.mode === 'relevance') {
+        if (state.customDateRange) {
+          dateRange = state.customDateRange;
+        } else if (state.selectedDateRange) {
+          const range = getDateRangeFromDays(state.selectedDateRange.days);
+          dateRange = range;
+        }
+      }
+
+      const response: PapersResponse = await fetchPapers({
+        topic: state.currentTopic || undefined,
+        mode: state.mode,
+        search: state.searchQuery || undefined,
+        keywords: state.selectedKeywords.length > 0 ? state.selectedKeywords : undefined,
+        from: dateRange.from,
+        to: dateRange.to,
+        page
+      });
       
       setState(prev => ({
         ...prev,
         papers: append ? [...prev.papers, ...response.papers] : response.papers,
         totalResults: response.totalResults,
-        loadedResults: start + response.papers.length,
+        loadedResults: (page + 1) * 20,
         loading: false,
-        currentTopic: topic || null,
-        searchQuery: search || ''
+        currentPage: page
       }));
     } catch (error) {
       const apiError = error as APIError;
@@ -61,32 +94,61 @@ function App() {
   const handleTopicChange = (topic: string) => {
     const topicKey = topic as TopicKey;
     if (topicKey !== state.currentTopic) {
-      loadPapers(topicKey);
+      setState(prev => ({
+        ...prev,
+        currentTopic: topicKey,
+        searchQuery: '',
+        selectedKeywords: [],
+        currentPage: 0
+      }));
     }
   };
 
   const handleSearch = (query: string) => {
-    if (query) {
-      loadPapers(undefined, query);
-    } else {
-      loadPapers(state.currentTopic || 'llm-nlp');
-    }
+    setState(prev => ({
+      ...prev,
+      searchQuery: query,
+      currentTopic: query ? null : prev.currentTopic,
+      selectedKeywords: [],
+      currentPage: 0
+    }));
+  };
+
+  const handleModeChange = (mode: SortMode) => {
+    setState(prev => ({
+      ...prev,
+      mode,
+      currentPage: 0,
+      // Set default date range for relevance mode
+      selectedDateRange: mode === 'relevance' && !prev.selectedDateRange 
+        ? { label: '14 días', days: 14 } 
+        : prev.selectedDateRange
+    }));
+  };
+
+  const handleDateRangeChange = (range: DateRange | null, customRange: { from: string; to: string } | null) => {
+    setState(prev => ({
+      ...prev,
+      selectedDateRange: range,
+      customDateRange: customRange,
+      currentPage: 0
+    }));
+  };
+
+  const handleKeywordsChange = (keywords: string[]) => {
+    setState(prev => ({
+      ...prev,
+      selectedKeywords: keywords,
+      currentPage: 0
+    }));
   };
 
   const handleLoadMore = () => {
-    if (state.searchQuery) {
-      loadPapers(undefined, state.searchQuery, true);
-    } else {
-      loadPapers(state.currentTopic || 'llm-nlp', undefined, true);
-    }
+    loadPapers(true);
   };
 
   const handleRetry = () => {
-    if (state.searchQuery) {
-      loadPapers(undefined, state.searchQuery);
-    } else {
-      loadPapers(state.currentTopic || 'llm-nlp');
-    }
+    loadPapers(false);
   };
 
   const toggleDarkMode = () => {
@@ -95,8 +157,21 @@ function App() {
   };
 
   useEffect(() => {
-    loadPapers('llm-nlp');
+    setState(prev => ({ ...prev, currentTopic: 'llm-nlp' }));
   }, []);
+
+  useEffect(() => {
+    if (state.currentTopic || state.searchQuery || state.mode === 'relevance') {
+      loadPapers(false);
+    }
+  }, [
+    state.currentTopic,
+    state.searchQuery,
+    state.mode,
+    state.selectedDateRange,
+    state.customDateRange,
+    state.selectedKeywords
+  ]);
 
   useEffect(() => {
     if (state.darkMode) {
@@ -108,6 +183,18 @@ function App() {
 
   const hasMoreResults = state.loadedResults < state.totalResults;
   const isSearchMode = Boolean(state.searchQuery);
+  const isRelevanceMode = state.mode === 'relevance';
+
+  // Get current date range label
+  const getCurrentRangeLabel = () => {
+    if (state.customDateRange) {
+      return `${state.customDateRange.from} - ${state.customDateRange.to}`;
+    }
+    if (state.selectedDateRange) {
+      return state.selectedDateRange.label;
+    }
+    return isRelevanceMode ? '14 días' : '';
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -133,34 +220,81 @@ function App() {
             </Button>
           </div>
 
-          <div className="flex justify-center mb-6">
-            <SearchBar 
-              onSearch={handleSearch}
-              isLoading={state.loading}
-              placeholder="Search papers by keyword..."
-            />
+          <div className="space-y-4">
+            <div className="flex justify-center">
+              <SearchBar 
+                onSearch={handleSearch}
+                isLoading={state.loading}
+                placeholder="Search papers by keyword..."
+              />
+            </div>
+
+            <div className="flex justify-center">
+              <ModeSelector 
+                mode={state.mode}
+                onModeChange={handleModeChange}
+              />
+            </div>
+
+            {isRelevanceMode && (
+              <div className="space-y-3">
+                <DateRangeSelector
+                  selectedRange={state.selectedDateRange}
+                  customRange={state.customDateRange}
+                  onRangeChange={handleDateRangeChange}
+                />
+                
+                <KeywordsSelector
+                  topic={state.currentTopic}
+                  selectedKeywords={state.selectedKeywords}
+                  onKeywordsChange={handleKeywordsChange}
+                />
+              </div>
+            )}
           </div>
 
-          {isSearchMode && (
-            <div className="flex items-center justify-center gap-2 mb-6 px-4 py-2 bg-muted rounded-lg">
-              <span className="text-sm text-muted-foreground">
-                Searching for: <span className="font-medium text-foreground">"{state.searchQuery}"</span>
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleSearch('')}
-                className="gap-1 h-6 px-2 text-xs"
-              >
-                <X size={12} />
-                Clear
-              </Button>
+          {(isSearchMode || isRelevanceMode) && (
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-6 px-4 py-3 bg-muted rounded-lg">
+              {isSearchMode && (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-muted-foreground">
+                    Buscando: <span className="font-medium text-foreground">"{state.searchQuery}"</span>
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleSearch('')}
+                    className="gap-1 h-6 px-2 text-xs"
+                  >
+                    <X size={12} />
+                    Limpiar
+                  </Button>
+                </div>
+              )}
+              
+              {isRelevanceMode && (
+                <div className="flex items-center gap-4 text-sm">
+                  <span className="text-muted-foreground">
+                    Ordenado por <span className="font-medium text-foreground">relevancia (arXiv)</span>
+                  </span>
+                  {getCurrentRangeLabel() && (
+                    <span className="text-muted-foreground">
+                      Período: <span className="font-medium text-foreground">{getCurrentRangeLabel()}</span>
+                    </span>
+                  )}
+                  {state.totalResults > 0 && (
+                    <span className="text-muted-foreground">
+                      <span className="font-medium text-foreground">{state.totalResults}</span> resultados
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </header>
 
         <main>
-          {!isSearchMode && (
+          {!isSearchMode && !isRelevanceMode && (
             <Tabs 
               value={state.currentTopic || 'llm-nlp'} 
               onValueChange={handleTopicChange}
@@ -189,13 +323,13 @@ function App() {
                 title="No papers found"
                 description={
                   isSearchMode
-                    ? "Try different keywords or browse by topic instead."
-                    : "No papers available for this topic right now."
+                    ? "Prueba con diferentes palabras clave o navega por tema."
+                    : "No hay papers disponibles para este tema en este momento."
                 }
                 action={
                   isSearchMode
                     ? {
-                        label: "Clear search",
+                        label: "Limpiar búsqueda",
                         onClick: () => handleSearch('')
                       }
                     : undefined
@@ -218,11 +352,11 @@ function App() {
                       className="gap-2"
                     >
                       {state.loading ? (
-                        'Loading...'
+                        'Cargando...'
                       ) : (
                         <>
                           <ArrowDown size={16} />
-                          Load More Papers
+                          Cargar más papers
                         </>
                       )}
                     </Button>

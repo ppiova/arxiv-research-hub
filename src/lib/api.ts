@@ -1,7 +1,8 @@
-import { ArxivPaper, PapersResponse, APIError, TOPICS } from './types';
+import { ArxivPaper, PapersResponse, APIError, QueryParams } from './types';
+import { buildArxivQuery, getCacheKey, getDateRangeFromDays } from './queryBuilder';
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
-const MAX_RESULTS = 20;
+const DEFAULT_PAGE_SIZE = 20;
 
 interface CacheEntry {
   data: PapersResponse;
@@ -9,10 +10,6 @@ interface CacheEntry {
 }
 
 const cache = new Map<string, CacheEntry>();
-
-function getCacheKey(topic?: string, search?: string, start?: number): string {
-  return `${topic || 'all'}-${search || ''}-${start || 0}`;
-}
 
 function isValidCache(entry: CacheEntry): boolean {
   return Date.now() - entry.timestamp < CACHE_DURATION;
@@ -82,12 +79,16 @@ function parseArxivFeed(xmlText: string): ArxivPaper[] {
   return papers;
 }
 
-export async function fetchPapers(
-  topic?: string,
-  search?: string,
-  start: number = 0
-): Promise<PapersResponse> {
-  const cacheKey = getCacheKey(topic, search, start);
+export async function fetchPapers(params: QueryParams): Promise<PapersResponse> {
+  // Apply default date range for relevance mode without dates
+  const finalParams = { ...params };
+  if (params.mode === 'relevance' && !params.from && !params.to) {
+    const dateRange = getDateRangeFromDays(14); // Default to last 14 days
+    finalParams.from = dateRange.from;
+    finalParams.to = dateRange.to;
+  }
+
+  const cacheKey = getCacheKey(finalParams);
   const cached = cache.get(cacheKey);
   
   if (cached && isValidCache(cached)) {
@@ -95,24 +96,9 @@ export async function fetchPapers(
   }
 
   try {
-    let searchQuery = '';
-    
-    if (search) {
-      searchQuery = `all:${encodeURIComponent(search)}`;
-    } else if (topic && topic in TOPICS) {
-      searchQuery = TOPICS[topic as keyof typeof TOPICS].query;
-    } else {
-      searchQuery = 'cat:cs.AI OR cat:cs.LG OR cat:cs.CL OR cat:cs.CV';
-    }
+    const arxivUrl = buildArxivQuery(finalParams);
 
-    const arxivUrl = new URL('http://export.arxiv.org/api/query');
-    arxivUrl.searchParams.set('search_query', searchQuery);
-    arxivUrl.searchParams.set('start', start.toString());
-    arxivUrl.searchParams.set('max_results', MAX_RESULTS.toString());
-    arxivUrl.searchParams.set('sortBy', 'submittedDate');
-    arxivUrl.searchParams.set('sortOrder', 'descending');
-
-    const response = await fetch(arxivUrl.toString(), {
+    const response = await fetch(arxivUrl, {
       headers: {
         'User-Agent': 'ArxivPaperApp/1.0'
       }
@@ -146,6 +132,20 @@ export async function fetchPapers(
     };
     throw apiError;
   }
+}
+
+// Legacy wrapper for backward compatibility
+export async function fetchPapersLegacy(
+  topic?: string,
+  search?: string,
+  start: number = 0
+): Promise<PapersResponse> {
+  return fetchPapers({
+    topic: topic as any,
+    search,
+    page: Math.floor(start / DEFAULT_PAGE_SIZE),
+    pageSize: DEFAULT_PAGE_SIZE
+  });
 }
 
 export function formatRelativeDate(dateString: string): string {

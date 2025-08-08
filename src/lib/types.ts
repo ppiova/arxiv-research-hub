@@ -23,37 +23,69 @@ export interface APIError {
 
 export type TopicKey = 'llm-nlp' | 'computer-vision' | 'multimodal' | 'robotics-rl' | 'ir-rag' | 'speech-audio' | 'safety-evals' | 'ml-systems';
 
-export const TOPICS: Record<TopicKey, { label: string; query: string }> = {
+export type SortMode = 'latest' | 'relevance';
+
+export interface QueryParams {
+  topic?: TopicKey;
+  mode?: SortMode;
+  search?: string;
+  keywords?: string[];
+  from?: string; // YYYYMMDD
+  to?: string;   // YYYYMMDD
+  page?: number;
+  pageSize?: number;
+}
+
+export interface DateRange {
+  label: string;
+  days: number;
+}
+
+export const DATE_RANGES: DateRange[] = [
+  { label: '7 días', days: 7 },
+  { label: '14 días', days: 14 },
+  { label: '30 días', days: 30 }
+];
+
+export const TOPICS: Record<TopicKey, { label: string; category: string; keywords: string[] }> = {
   'llm-nlp': {
     label: 'LLMs & NLP',
-    query: 'cat:cs.CL OR cat:cs.AI OR cat:stat.ML'
+    category: 'cs.CL',
+    keywords: ['LLM', 'large language model', 'transformer', 'reasoning', 'RAG']
   },
   'computer-vision': {
     label: 'Computer Vision',
-    query: 'cat:cs.CV OR cat:cs.GR'
+    category: 'cs.CV',
+    keywords: ['diffusion', 'detection', 'segmentation', 'vision-language']
   },
   'multimodal': {
     label: 'Multimodal',
-    query: 'cat:cs.MM OR cat:cs.CV OR cat:cs.CL'
+    category: 'cs.MM',
+    keywords: ['vision-language', 'VLM', 'multimodal']
   },
   'robotics-rl': {
     label: 'Robotics & RL',
-    query: 'cat:cs.RO OR cat:cs.LG OR cat:stat.ML'
+    category: 'cs.RO',
+    keywords: ['reinforcement learning', 'robotics', 'policy']
   },
   'ir-rag': {
     label: 'IR/RAG',
-    query: 'cat:cs.IR OR cat:cs.DB OR cat:cs.AI'
+    category: 'cs.IR',
+    keywords: ['retrieval', 'RAG', 'indexing', 'reranking']
   },
   'speech-audio': {
     label: 'Speech/Audio',
-    query: 'cat:cs.SD OR cat:eess.AS OR cat:cs.CL'
+    category: 'eess.AS',
+    keywords: ['speech', 'ASR', 'TTS', 'audio']
   },
   'safety-evals': {
     label: 'Safety/Evals',
-    query: 'cat:cs.AI OR cat:cs.CY OR cat:cs.LG'
+    category: 'cs.AI',
+    keywords: ['safety', 'alignment', 'evaluation', 'benchmark']
   },
   'ml-systems': {
     label: 'ML Systems',
-    query: 'cat:cs.DC OR cat:cs.LG OR cat:cs.PF'
+    category: 'cs.DC',
+    keywords: ['systems', 'scaling', 'inference', 'serving', 'quantization']
   }
 };
