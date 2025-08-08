@@ -25,7 +25,12 @@ export function buildArxivQuery(params: QueryParams): string {
     searchQuery = 'cat:cs.AI OR cat:cs.LG OR cat:cs.CL OR cat:cs.CV';
   }
 
-  const arxivUrl = new URL('http://export.arxiv.org/api/query');
+  // Use Vite proxy in development to avoid CORS. In production hit arXiv directly.
+  const isDev = import.meta.env.DEV;
+  const base = isDev ? '/proxy' : 'https://export.arxiv.org';
+  // When using a relative path, URL needs a base; fall back to localhost if window is unavailable.
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173';
+  const arxivUrl = new URL(`${base}/api/query`, origin);
   arxivUrl.searchParams.set('search_query', searchQuery);
   arxivUrl.searchParams.set('start', (page * pageSize).toString());
   arxivUrl.searchParams.set('max_results', pageSize.toString());

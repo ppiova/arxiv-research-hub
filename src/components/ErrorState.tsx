@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { AlertTriangle, ArrowCounterClockwise } from '@phosphor-icons/react';
+import { WarningCircle, ArrowCounterClockwise } from '@phosphor-icons/react';
 
 interface ErrorStateProps {
   message: string;
@@ -13,7 +13,7 @@ export function ErrorState({ message, onRetry, showRetry = true }: ErrorStatePro
     <Card className="p-8 text-center max-w-md mx-auto">
       <div className="flex flex-col items-center gap-4">
         <div className="p-3 rounded-full bg-destructive/10">
-          <AlertTriangle size={32} className="text-destructive" />
+          <WarningCircle size={32} className="text-destructive" />
         </div>
         
         <div className="space-y-2">
