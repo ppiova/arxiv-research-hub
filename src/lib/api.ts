@@ -1,5 +1,5 @@
 import { ArxivPaper, PapersResponse, APIError, QueryParams } from './types';
-import { buildArxivQuery, getCacheKey, getDateRangeFromDays } from './queryBuilder';
+import { buildArxivQuery, getCacheKey } from './queryBuilder';
 
 const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const DEFAULT_PAGE_SIZE = 20;
@@ -80,15 +80,7 @@ function parseArxivFeed(xmlText: string): ArxivPaper[] {
 }
 
 export async function fetchPapers(params: QueryParams): Promise<PapersResponse> {
-  // Apply default date range for relevance mode without dates
-  const finalParams = { ...params };
-  if (params.mode === 'relevance' && !params.from && !params.to) {
-    const dateRange = getDateRangeFromDays(14); // Default to last 14 days
-    finalParams.from = dateRange.from;
-    finalParams.to = dateRange.to;
-  }
-
-  const cacheKey = getCacheKey(finalParams);
+  const cacheKey = getCacheKey(params);
   const cached = cache.get(cacheKey);
   
   if (cached && isValidCache(cached)) {
@@ -96,7 +88,7 @@ export async function fetchPapers(params: QueryParams): Promise<PapersResponse> 
   }
 
   try {
-    const arxivUrl = buildArxivQuery(finalParams);
+    const arxivUrl = buildArxivQuery(params);
 
     const response = await fetch(arxivUrl, {
       headers: {

@@ -23,69 +23,44 @@ export interface APIError {
 
 export type TopicKey = 'llm-nlp' | 'computer-vision' | 'multimodal' | 'robotics-rl' | 'ir-rag' | 'speech-audio' | 'safety-evals' | 'ml-systems';
 
-export type SortMode = 'latest' | 'relevance';
-
 export interface QueryParams {
   topic?: TopicKey;
-  mode?: SortMode;
   search?: string;
-  keywords?: string[];
-  from?: string; // YYYYMMDD
-  to?: string;   // YYYYMMDD
   page?: number;
   pageSize?: number;
 }
 
-export interface DateRange {
-  label: string;
-  days: number;
-}
-
-export const DATE_RANGES: DateRange[] = [
-  { label: '7 días', days: 7 },
-  { label: '14 días', days: 14 },
-  { label: '30 días', days: 30 }
-];
-
-export const TOPICS: Record<TopicKey, { label: string; category: string; keywords: string[] }> = {
+export const TOPICS: Record<TopicKey, { label: string; category: string }> = {
   'llm-nlp': {
     label: 'LLMs & NLP',
-    category: 'cs.CL',
-    keywords: ['LLM', 'large language model', 'transformer', 'reasoning', 'RAG']
+    category: 'cs.CL'
   },
   'computer-vision': {
     label: 'Computer Vision',
-    category: 'cs.CV',
-    keywords: ['diffusion', 'detection', 'segmentation', 'vision-language']
+    category: 'cs.CV'
   },
   'multimodal': {
     label: 'Multimodal',
-    category: 'cs.MM',
-    keywords: ['vision-language', 'VLM', 'multimodal']
+    category: 'cs.MM'
   },
   'robotics-rl': {
     label: 'Robotics & RL',
-    category: 'cs.RO',
-    keywords: ['reinforcement learning', 'robotics', 'policy']
+    category: 'cs.RO'
   },
   'ir-rag': {
     label: 'IR/RAG',
-    category: 'cs.IR',
-    keywords: ['retrieval', 'RAG', 'indexing', 'reranking']
+    category: 'cs.IR'
   },
   'speech-audio': {
     label: 'Speech/Audio',
-    category: 'eess.AS',
-    keywords: ['speech', 'ASR', 'TTS', 'audio']
+    category: 'eess.AS'
   },
   'safety-evals': {
     label: 'Safety/Evals',
-    category: 'cs.AI',
-    keywords: ['safety', 'alignment', 'evaluation', 'benchmark']
+    category: 'cs.AI'
   },
   'ml-systems': {
     label: 'ML Systems',
-    category: 'cs.DC',
-    keywords: ['systems', 'scaling', 'inference', 'serving', 'quantization']
+    category: 'cs.DC'
   }
 };
