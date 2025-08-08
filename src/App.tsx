@@ -257,15 +257,29 @@ function App() {
         </main>
 
         <footer className="mt-16 pt-8 border-t text-center text-muted-foreground text-sm">
-          <p>
-            Powered by{' '}
+          <p className="flex flex-wrap items-center justify-center gap-2">
+            <span>
+              Powered by{' '}
+              <a
+                href="https://arxiv.org"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline"
+              >
+                arXiv.org
+              </a>
+            </span>
+            <span className="text-muted-foreground">|</span>
+            <span>Pablito Piova</span>
+            <span className="text-muted-foreground">|</span>
             <a
-              href="https://arxiv.org"
+              href="https://www.linkedin.com/in/ppiova/"
               target="_blank"
               rel="noopener noreferrer"
               className="text-primary hover:underline"
+              aria-label="Pablito Piova on LinkedIn"
             >
-              arXiv.org
+              LinkedIn
             </a>
           </p>
         </footer>
