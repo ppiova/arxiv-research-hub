@@ -7,7 +7,7 @@ import { PaperCard } from '@/components/PaperCard';
 import { PaperGridSkeleton } from '@/components/PaperCardSkeleton';
 import { SearchBar } from '@/components/SearchBar';
 import { ErrorState, EmptyState } from '@/components/ErrorState';
-import { Moon, Sun, ArrowDown } from '@phosphor-icons/react';
+import { Moon, Sun, ArrowDown, X } from '@phosphor-icons/react';
 
 interface AppState {
   papers: ArxivPaper[];
@@ -140,6 +140,23 @@ function App() {
               placeholder="Search papers by keyword..."
             />
           </div>
+
+          {isSearchMode && (
+            <div className="flex items-center justify-center gap-2 mb-6 px-4 py-2 bg-muted rounded-lg">
+              <span className="text-sm text-muted-foreground">
+                Searching for: <span className="font-medium text-foreground">"{state.searchQuery}"</span>
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleSearch('')}
+                className="gap-1 h-6 px-2 text-xs"
+              >
+                <X size={12} />
+                Clear
+              </Button>
+            </div>
+          )}
         </header>
 
         <main>
